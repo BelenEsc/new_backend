@@ -1,0 +1,196 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="description" content="Request form for storing DNA samples at the DNA Bank of the Botanischer Garten Berlin (BGBM)" />
+    <meta name="keywords" content="DNA Bank, DNA storage, biobanking, Botanischer Garten Berlin, BGBM, biological samples" />
+    <title>DNA Storage Request - BGBM</title>
+    {% static 'style.css' as css_file %}
+    <link rel="stylesheet" href="{{ css_file }}">
+
+</head>
+
+<body>
+    <div id="Headx">
+        <div>
+            <img src="https://www.bgbm.org/sites/default/files/styles/150px_width/public/images/pr/bo_logo-big-online_rgb-midnightgreen.jpg?itok=MGlNUGNW"
+                height="120px" alt="BGBM Logo" />
+        </div>
+        <div>
+            <h1 id="title">DNA Sample Storage - Request Form</h1>
+            <h2 id="subtitle">
+                Please fill out one form per requested sample. A sample is defined as any type of material derived from a single specimen.
+            </h2>
+        </div>
+    </div>
+
+    <div id="content">
+        <form id="storageRequestForm">
+            <!-- Requester Information -->
+            <div id="Requester">
+                <div>
+                    <p><strong>Requester Information:</strong></p>
+                    <div>
+                        <form>
+                            <div class="form-group">
+                                <label for="first_name">First name:</label>
+                                <input type="text" id="first_name" name="first_name" /><br />
+                            </div>
+                            <div class="form-group">
+                                <label for="last_name">Last name:</label>
+                                <input type="text" id="last_name" name="last_name" /><br />
+                            </div>
+                            <div class="form-group">
+                                <label for="contact_person_email">Email address:</label>
+                                <input type="text" id="contact_person_email" name="contact_person_email" /><br />
+                            </div>
+                            <div class="form-group">
+                                <label for="requester_institution">Requester institution:</label>
+                                <input type="text" id="requester_institution" name="requester_institution" /><br />
+                            </div>
+                            <div class="form-group">
+                                <label for="institution_location">Institution's location:</label>
+                                <input type="text" id="institution_location" name="institution_location" /><br />
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Request -->
+            <div id="Request">
+                <p><strong>Request:</strong></p>
+                <div class="form-group">
+                    <label for="tissue_sample_quantity">Tissue sample IDs quantity required:</label>
+                    <input type="number" id="tissue_sample_quantity" name="tissue_sample_quantity" />
+                </div>
+                <div class="form-group">
+                    <label for="aliquot_sample_quantity">Aliquot sample IDs quantity required:</label>
+                    <input type="number" id="aliquot_sample_quantity" name="aliquot_sample_quantity" />
+                </div>
+                <div class="form-group">
+                    <label for="manifest_file">Manifest file:</label>
+                    <input type="file" id="manifest_file" name="manifest_file" />
+                </div>
+            </div>
+
+            <!-- Sample Metadata -->
+            <div id="Metadata">
+                <p><strong>Sample Metadata:</strong></p>
+                <div class="form-group">
+                    <label for="original_sample_id">Original sample ID:</label>
+                    <input type="text" id="original_sample_id" name="original_sample_id" />
+                </div>
+                <div class="form-group">
+                    <label for="taxon_group">Taxon group:</label>
+                    <input type="text" id="taxon_group" name="taxon_group" />
+                </div>
+                <div class="form-group">
+                    <label for="family">Family:</label>
+                    <input type="text" id="family" name="family" />
+                </div>
+                <div class="form-group">
+                    <label for="genus">Genus:</label>
+                    <input type="text" id="genus" name="genus" />
+                </div>
+                <div class="form-group">
+                    <label for="scientific_name">Scientific name:</label>
+                    <input type="text" id="scientific_name" name="scientific_name" />
+                </div>
+                <div class="form-group">
+                    <label for="interspecific_epithet">Interspecific epithet:</label>
+                    <input type="text" id="interspecific_epithet" name="interspecific_epithet" />
+                </div>
+                <div class="form-group">
+                    <label for="collector_sample_id">Collector sample number:</label>
+                    <input type="text" id="collector_sample_id" name="collector_sample_id" />
+                </div>
+                <div class="form-group">
+                    <label for="collector">Collector:</label>
+                    <input type="text" id="collector" name="collector" />
+                </div>
+                <div class="form-group">
+                    <label for="collector_affiliation">Collector affiliation:</label>
+                    <input type="text" id="collector_affiliation" name="collector_affiliation" />
+                </div>
+                <div class="form-group">
+                    <label for="date_of_collection">Date of collection:</label>
+                    <input type="date" id="date_of_collection" name="date_of_collection" />
+                </div>
+                <div class="form-group">
+                    <label for="collection_location">Collection location:</label>
+                    <input type="text" id="collection_location" name="collection_location" />
+                </div>
+                <div class="form-group">
+                    <label for="decimal_latitude">Decimal latitude:</label>
+                    <input type="text" id="decimal_latitude" name="decimal_latitude" />
+                </div>
+                <div class="form-group">
+                    <label for="decimal_longitude">Decimal longitude:</label>
+                    <input type="text" id="decimal_longitude" name="decimal_longitude" />
+                </div>
+                <div class="form-group">
+                    <label for="habitat">Habitat:</label>
+                    <input type="text" id="habitat" name="habitat" />
+                </div>
+                <div class="form-group">
+                    <label for="elevation">Elevation (m):</label>
+                    <input type="number" id="elevation" name="elevation" />
+                </div>
+                <div class="form-group">
+                    <label for="identified_by">Identified by:</label>
+                    <input type="text" id="identified_by" name="identified_by" />
+                </div>
+                <div class="form-group">
+                    <label for="voucher_id">Voucher ID:</label>
+                    <input type="text" id="voucher_id" name="voucher_id" />
+                </div>
+                <div class="form-group">
+                    <label for="voucher_link">Voucher link:</label>
+                    <input type="url" id="voucher_link" name="voucher_link" />
+                </div>
+                <div class="form-group">
+                    <label for="voucher_institution">Voucher institution:</label>
+                    <input type="text" id="voucher_institution" name="voucher_institution" />
+                </div>
+                <div class="form-group">
+                    <label for="sampling_permits_required">Sampling permits required:</label>
+                    <input type="checkbox" id="sampling_permits_required" name="sampling_permits_required" />
+                </div>
+                <div class="form-group">
+                    <label for="sampling_permits_file">Sampling permits file:</label>
+                    <input type="file" id="sampling_permits_file" name="sampling_permits_file" />
+                </div>
+                <div class="form-group">
+                    <label for="nagoya_permits_required">Nagoya permits required:</label>
+                    <input type="checkbox" id="nagoya_permits_required" name="nagoya_permits_required" />
+                </div>
+                <div class="form-group">
+                    <label for="nagoya_permits_file">Nagoya permits file:</label>
+                    <input type="file" id="nagoya_permits_file" name="nagoya_permits_file" />
+                </div>
+            </div>
+
+            <!-- Shipment Info -->
+            <div id="Shipment">
+                <p><strong>Shipment Information:</strong></p>
+                <div class="form-group">
+                    <label for="shipment_date">Shipment date:</label>
+                    <input type="date" id="shipment_date" name="shipment_date" />
+                </div>
+                <div class="form-group">
+                    <label for="tracking_number">Tracking number:</label>
+                    <input type="text" id="tracking_number" name="tracking_number" />
+                </div>
+            </div>
+
+            <div>
+                <button type="submit">Send form</button>
+            </div>
+        </form>
+    </div>
+</body>
+
+</html>

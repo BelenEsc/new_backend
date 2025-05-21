@@ -1,0 +1,15 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>DNA Storage Request</title>
+    {% static 'styles.css' as css_file %}
+    <link rel="stylesheet" href="{{ css_file }}">
+</head>
+<body>
+    {% static 'imagen.jpg' as img_file %}
+    <img src="{{ img_file }}">
+    <h1>Bienvenido a DNA Storage Request</h1>
+</body>
+</html>
