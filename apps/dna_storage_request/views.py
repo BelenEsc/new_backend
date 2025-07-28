@@ -1,6 +1,9 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from .models import Requester, Request, DnaAliquot
+from .serializers import RequesterSerializer, DnaAliquotSerializer
+
 
 class HomeView(APIView):
     def get(self, request):
@@ -15,10 +18,8 @@ class MensajeView(APIView):
 
 class StorageRequestView(APIView):
     def post(self, request):
-        try:
-            return Response({'mensaje': 'Formulario recibido'}, status=status.HTTP_201_CREATED)
-        except Exception as e:
-            return Response(
-                {'error': str(e)},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+        requester_serializer = RequesterSerializer(data=request.data)
+        if requester_serializer.is_valid():
+            requester_serializer.save()
+            return Response(requester_serializer.data, status=status.HTTP_201_CREATED)
+        return Response(requester_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
