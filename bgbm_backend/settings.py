@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django_filters',
     'rest_framework',
     'corsheaders',
     'apps.dna_storage_request',
@@ -79,9 +80,9 @@ WSGI_APPLICATION = 'bgbm_backend.wsgi.application'
 DATABASES = {
     "default": {
         "ENGINE": 'django.db.backends.mysql',
-        "NAME": 'DNA_Storage_Request',
-        "USER": 'admin',
-        "PASSWORD": '1234',
+        "NAME": 'dna_storage_request',
+        "USER": 'root',
+        "PASSWORD": 'gwGVhMd4U9I1E30n0bXJ',
         "HOST": 'localhost',
         "PORT": 3306,
     }
@@ -133,4 +134,25 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
+    "http://127.0.0.1:3000",
 ]
+
+REST_FRAMEWORK = {
+    'DEFAULT_SCHEMA_CLASS': 'rest_framework.schemas.openapi.AutoSchema',
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 20,
+    'DEFAULT_FILTER_BACKENDS': [
+        'django_filters.rest_framework.DjangoFilterBackend',
+        'rest_framework.filters.SearchFilter',
+        'rest_framework.filters.OrderingFilter',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.AllowAny',
+    ],
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.TokenAuthentication',
+    ],
+}
+
+#CORS_ALLOW_ALL_ORIGINS = True

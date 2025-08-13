@@ -7,6 +7,38 @@
 # Feel free to rename the models, but don't rename db_table values or field names.
 from django.db import models
 
+class Requester(models.Model):
+    first_name = models.CharField(max_length=100)
+    last_name = models.CharField(max_length=100)
+    contact_person_email = models.CharField(max_length=100)
+    requester_institution = models.CharField(max_length=100)
+    institution_location = models.CharField(max_length=100)
+    created_at = models.DateTimeField(blank=True, null=True)
+    updated_at = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'Requester'
+        
+
+class Request(models.Model):
+    requester = models.ForeignKey('Requester', models.DO_NOTHING)
+    request_date = models.DateField()
+    tissue_sample_quantity = models.IntegerField(blank=True, null=True)
+    aliquot_sample_quantity = models.IntegerField(blank=True, null=True)
+    has_manifest_file = models.IntegerField(blank=True, null=True)
+    manifest_storage_path = models.CharField(max_length=400, blank=True, null=True)
+    b_mta_sent_date = models.DateField(blank=True, null=True)
+    mta_signed_date = models.DateField(blank=True, null=True)
+    mta_storage_path = models.CharField(max_length=200, blank=True, null=True)
+    created_at = models.DateTimeField(blank=True, null=True)
+    updated_at = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'Request'
+        db_table_comment = '\t'
+
 
 class DnaAliquot(models.Model):
     request = models.ForeignKey('Request', models.DO_NOTHING)
@@ -54,39 +86,6 @@ class Metadata(models.Model):
     class Meta:
         managed = False
         db_table = 'Metadata'
-
-
-class Request(models.Model):
-    requester = models.ForeignKey('Requester', models.DO_NOTHING)
-    request_date = models.DateField()
-    tissue_sample_quantity = models.IntegerField(blank=True, null=True)
-    aliquot_sample_quantity = models.IntegerField(blank=True, null=True)
-    has_manifest_file = models.IntegerField(blank=True, null=True)
-    manifest_storage_path = models.CharField(max_length=400, blank=True, null=True)
-    b_mta_sent_date = models.DateField(blank=True, null=True)
-    mta_signed_date = models.DateField(blank=True, null=True)
-    mta_storage_path = models.CharField(max_length=200, blank=True, null=True)
-    created_at = models.DateTimeField(blank=True, null=True)
-    updated_at = models.DateTimeField(blank=True, null=True)
-
-    class Meta:
-        managed = False
-        db_table = 'Request'
-        db_table_comment = '\t'
-
-
-class Requester(models.Model):
-    first_name = models.CharField(max_length=100)
-    last_name = models.CharField(max_length=100)
-    contact_person_email = models.CharField(max_length=100)
-    requester_institution = models.CharField(max_length=100)
-    institution_location = models.CharField(max_length=100)
-    created_at = models.DateTimeField(blank=True, null=True)
-    updated_at = models.DateTimeField(blank=True, null=True)
-
-    class Meta:
-        managed = False
-        db_table = 'Requester'
 
 
 class Shipment(models.Model):
