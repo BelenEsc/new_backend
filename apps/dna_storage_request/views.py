@@ -1,6 +1,8 @@
+# views.py - Actualizado con filtros por usuario y autenticación
 from rest_framework import viewsets, status, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Q
 from .models import Requester, Request, Metadata, Shipment, Tissue, DnaAliquot
@@ -11,15 +13,34 @@ from .serializers import (
 
 class RequesterViewSet(viewsets.ModelViewSet):
     """
-    ViewSet for managing Requesters
+    ViewSet for managing Requesters - cada usuario solo ve/maneja su propio requester
     """
     queryset = Requester.objects.all()
     serializer_class = RequesterSerializer
+    permission_classes = [IsAuthenticated]  # Requerir autenticación
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['requester_institution', 'institution_location']
     search_fields = ['first_name', 'last_name', 'contact_person_email', 'requester_institution']
     ordering_fields = ['created_at', 'last_name', 'first_name']
     ordering = ['-created_at']
+    
+    def get_queryset(self):
+        """Solo mostrar el requester del usuario actual, o todos si es admin"""
+        if not self.request.user.is_authenticated:
+            return Requester.objects.none()
+            
+        if self.request.user.is_staff:
+            return Requester.objects.all()
+        return Requester.objects.filter(user=self.request.user)
+    
+    def perform_create(self, serializer):
+        """Automáticamente asignar el usuario actual al crear un requester"""
+        # Verificar si el usuario ya tiene un requester
+        if Requester.objects.filter(user=self.request.user).exists():
+            from rest_framework.exceptions import ValidationError
+            raise ValidationError("Ya tienes un perfil de requester creado.")
+        
+        serializer.save(user=self.request.user)
     
     @action(detail=True, methods=['get'])
     def requests(self, request, pk=None):
@@ -31,15 +52,25 @@ class RequesterViewSet(viewsets.ModelViewSet):
 
 class RequestViewSet(viewsets.ModelViewSet):
     """
-    ViewSet for managing Requests
+    ViewSet for managing Requests - solo mostrar requests del usuario actual
     """
     queryset = Request.objects.select_related('requester').all()
     serializer_class = RequestSerializer
+    permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['requester', 'request_date']
     search_fields = ['requester__first_name', 'requester__last_name', 'requester__requester_institution']
     ordering_fields = ['created_at', 'request_date', 'mta_signed_date']
     ordering = ['-created_at']
+    
+    def get_queryset(self):
+        """Solo mostrar requests del usuario actual, o todos si es admin"""
+        if not self.request.user.is_authenticated:
+            return Request.objects.none()
+            
+        if self.request.user.is_staff:
+            return Request.objects.select_related('requester').all()
+        return Request.objects.select_related('requester').filter(requester__user=self.request.user)
     
     @action(detail=True, methods=['get'])
     def metadata(self, request, pk=None):
@@ -56,25 +87,14 @@ class RequestViewSet(viewsets.ModelViewSet):
         shipments = Shipment.objects.filter(request=request_obj)
         serializer = ShipmentSerializer(shipments, many=True)
         return Response(serializer.data)
-    
-    @action(detail=True, methods=['get'])
-    def statistics(self, request, pk=None):
-        """Get statistics for a specific request"""
-        request_obj = self.get_object()
-        stats = {
-            'total_metadata': Metadata.objects.filter(request=request_obj).count(),
-            'total_shipments': Shipment.objects.filter(request=request_obj).count(),
-            'total_tissues': Tissue.objects.filter(request=request_obj).count(),
-            'total_dna_aliquots': DnaAliquot.objects.filter(request=request_obj).count(),
-        }
-        return Response(stats)
 
 class MetadataViewSet(viewsets.ModelViewSet):
     """
-    ViewSet for managing Metadata
+    ViewSet for managing Metadata - solo mostrar metadata de requests del usuario
     """
     queryset = Metadata.objects.select_related('request').all()
     serializer_class = MetadataSerializer
+    permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['request', 'taxon_group', 'family', 'genus', 'collected_by']
     search_fields = [
@@ -84,56 +104,44 @@ class MetadataViewSet(viewsets.ModelViewSet):
     ordering_fields = ['created_at', 'date_of_collection', 'scientific_name']
     ordering = ['-created_at']
     
-    @action(detail=False, methods=['get'])
-    def by_taxon_group(self, request):
-        """Get metadata grouped by taxon group"""
-        taxon_groups = self.get_queryset().values_list('taxon_group', flat=True).distinct()
-        result = {}
-        for group in taxon_groups:
-            if group:
-                result[group] = self.get_queryset().filter(taxon_group=group).count()
-        return Response(result)
-    
-    @action(detail=False, methods=['get'])
-    def locations(self, request):
-        """Get unique collection locations"""
-        locations = self.get_queryset().values_list('collection_location', flat=True).distinct()
-        return Response([loc for loc in locations if loc])
+    def get_queryset(self):
+        """Solo mostrar metadata de requests del usuario actual"""
+        if not self.request.user.is_authenticated:
+            return Metadata.objects.none()
+            
+        if self.request.user.is_staff:
+            return Metadata.objects.select_related('request').all()
+        return Metadata.objects.select_related('request').filter(request__requester__user=self.request.user)
 
 class ShipmentViewSet(viewsets.ModelViewSet):
     """
-    ViewSet for managing Shipments
+    ViewSet for managing Shipments - solo mostrar shipments del usuario
     """
     queryset = Shipment.objects.select_related('request').all()
     serializer_class = ShipmentSerializer
+    permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['request', 'shipment_date', 'is_collection_b_labeled']
     search_fields = ['tracking_number', 'request__requester__first_name', 'request__requester__last_name']
     ordering_fields = ['created_at', 'shipment_date', 'accession_date']
     ordering = ['-created_at']
     
-    @action(detail=True, methods=['get'])
-    def tissues(self, request, pk=None):
-        """Get all tissues for a specific shipment"""
-        shipment = self.get_object()
-        tissues = Tissue.objects.filter(shipment=shipment)
-        serializer = TissueSerializer(tissues, many=True)
-        return Response(serializer.data)
-    
-    @action(detail=True, methods=['get'])
-    def dna_aliquots(self, request, pk=None):
-        """Get all DNA aliquots for a specific shipment"""
-        shipment = self.get_object()
-        aliquots = DnaAliquot.objects.filter(shipment=shipment)
-        serializer = DnaAliquotSerializer(aliquots, many=True)
-        return Response(serializer.data)
+    def get_queryset(self):
+        """Solo mostrar shipments de requests del usuario actual"""
+        if not self.request.user.is_authenticated:
+            return Shipment.objects.none()
+            
+        if self.request.user.is_staff:
+            return Shipment.objects.select_related('request').all()
+        return Shipment.objects.select_related('request').filter(request__requester__user=self.request.user)
 
 class TissueViewSet(viewsets.ModelViewSet):
     """
-    ViewSet for managing Tissue samples
+    ViewSet for managing Tissue samples - solo mostrar tissues del usuario
     """
     queryset = Tissue.objects.select_related('request', 'shipment', 'metadata').all()
     serializer_class = TissueSerializer
+    permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = [
         'request', 'shipment', 'metadata', 'is_in_jacq', 
@@ -146,38 +154,24 @@ class TissueViewSet(viewsets.ModelViewSet):
     ordering_fields = ['created_at', 'tissue_barcode']
     ordering = ['-created_at']
     
-    @action(detail=False, methods=['get'])
-    def by_storage_location(self, request):
-        """Get tissues grouped by storage location"""
-        locations = self.get_queryset().values_list(
-            'tissue_sample_storage_location', flat=True
-        ).distinct()
-        result = {}
-        for location in locations:
-            if location:
-                result[location] = self.get_queryset().filter(
-                    tissue_sample_storage_location=location
-                ).count()
-        return Response(result)
-    
-    @action(detail=False, methods=['get'])
-    def in_jacq_stats(self, request):
-        """Get statistics about tissues in JACQ"""
-        total = self.get_queryset().count()
-        in_jacq = self.get_queryset().filter(is_in_jacq=1).count()
-        return Response({
-            'total': total,
-            'in_jacq': in_jacq,
-            'not_in_jacq': total - in_jacq,
-            'percentage_in_jacq': (in_jacq / total * 100) if total > 0 else 0
-        })
+    def get_queryset(self):
+        """Solo mostrar tissues de requests del usuario actual"""
+        if not self.request.user.is_authenticated:
+            return Tissue.objects.none()
+            
+        if self.request.user.is_staff:
+            return Tissue.objects.select_related('request', 'shipment', 'metadata').all()
+        return Tissue.objects.select_related('request', 'shipment', 'metadata').filter(
+            request__requester__user=self.request.user
+        )
 
 class DnaAliquotViewSet(viewsets.ModelViewSet):
     """
-    ViewSet for managing DNA Aliquots
+    ViewSet for managing DNA Aliquots - solo mostrar aliquots del usuario
     """
     queryset = DnaAliquot.objects.select_related('request', 'shipment', 'metadata').all()
     serializer_class = DnaAliquotSerializer
+    permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = [
         'request', 'shipment', 'metadata', 'is_in_database',
@@ -190,29 +184,13 @@ class DnaAliquotViewSet(viewsets.ModelViewSet):
     ordering_fields = ['created_at', 'dna_aliquot_qr_code']
     ordering = ['-created_at']
     
-    @action(detail=False, methods=['get'])
-    def by_storage_location(self, request):
-        """Get DNA aliquots grouped by storage location"""
-        locations = self.get_queryset().values_list(
-            'dna_aliquot_storage_location', flat=True
-        ).distinct()
-        result = {}
-        for location in locations:
-            if location:
-                result[location] = self.get_queryset().filter(
-                    dna_aliquot_storage_location=location
-                ).count()
-        return Response(result)
-    
-    @action(detail=False, methods=['get'])
-    def database_stats(self, request):
-        """Get statistics about aliquots in database"""
-        total = self.get_queryset().count()
-        in_database = self.get_queryset().filter(is_in_database=1).count()
-        return Response({
-            'total': total,
-            'in_database': in_database,
-            'not_in_database': total - in_database,
-            'percentage_in_database': (in_database / total * 100) if total > 0 else 0
-        })
-
+    def get_queryset(self):
+        """Solo mostrar DNA aliquots de requests del usuario actual"""
+        if not self.request.user.is_authenticated:
+            return DnaAliquot.objects.none()
+            
+        if self.request.user.is_staff:
+            return DnaAliquot.objects.select_related('request', 'shipment', 'metadata').all()
+        return DnaAliquot.objects.select_related('request', 'shipment', 'metadata').filter(
+            request__requester__user=self.request.user
+        )
