@@ -1,22 +1,51 @@
 # models.py - Actualizado
 from django.db import models
 from django.contrib.auth.models import User
+from django.core.validators import EmailValidator
+from django.core.exceptions import ValidationError
 
 class Requester(models.Model):
     # Relación 1:1 con User - un usuario puede tener solo un requester
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='requester_profile')
     
-    first_name = models.CharField(max_length=100)
-    last_name = models.CharField(max_length=100)
-    contact_person_email = models.CharField(max_length=100)
-    requester_institution = models.CharField(max_length=100)
-    institution_location = models.CharField(max_length=100)
+    first_name = models.CharField(max_length=100, help_text="Nombre del requester")
+    last_name = models.CharField(max_length=100, help_text="Apellido del requester")
+    contact_person_email = models.EmailField(
+        max_length=100, 
+        validators=[EmailValidator(message="Ingrese un email válido")],
+        help_text="Email de contacto del requester"
+    )
+    requester_institution = models.CharField(
+        max_length=100, 
+        help_text="Ej: Universidad Nacional de Colombia, Max Planck Institutes"
+    )
+    institution_location = models.CharField(
+        max_length=100, 
+        help_text="Ej: Bogotá, Colombia o Berlin, Germassssny"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        managed = True  # Cambiar a True para permitir migraciones
+        managed = True
         db_table = 'Requester'
+        
+    def clean(self):
+        """Validación personalizada"""
+        super().clean()
+        
+        # Validar que el usuario no tenga ya otro requester
+        if self.user_id:
+            existing = Requester.objects.filter(user=self.user).exclude(pk=self.pk)
+            if existing.exists():
+                raise ValidationError(
+                    "Este usuario ya tiene un perfil de requester creado."
+                )
+    
+    def save(self, *args, **kwargs):
+        """Override save para ejecutar validaciones"""
+        self.clean()
+        super().save(*args, **kwargs)
         
     def __str__(self):
         return f"{self.first_name} {self.last_name} ({self.user.username})"

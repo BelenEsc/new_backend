@@ -35,11 +35,11 @@ class RequesterViewSet(viewsets.ModelViewSet):
     
     def perform_create(self, serializer):
         """Automáticamente asignar el usuario actual al crear un requester"""
-        # Verificar si el usuario ya tiene un requester
         if Requester.objects.filter(user=self.request.user).exists():
             from rest_framework.exceptions import ValidationError
-            raise ValidationError("Ya tienes un perfil de requester creado.")
-        
+            raise ValidationError({
+                'non_field_errors': ['You already created a Requester']
+            })
         serializer.save(user=self.request.user)
     
     @action(detail=True, methods=['get'])

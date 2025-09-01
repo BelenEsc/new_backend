@@ -11,14 +11,36 @@ class RequesterSerializer(serializers.ModelSerializer):
                  'requester_institution', 'institution_location', 'created_at', 
                  'updated_at', 'full_name', 'username']
         read_only_fields = ['id', 'created_at', 'updated_at', 'full_name', 'username']
-        # No incluimos 'user' en fields para evitar que sea requerido en POST
-    
+        
     def get_full_name(self, obj):
         return f"{obj.first_name} {obj.last_name}"
+    
+    def validate(self, data):
+        """Validación adicional"""
+        # Si estamos creando (no hay instance) verificar que el usuario no tenga requester
+        if not self.instance and self.context.get('request'):
+            user = self.context['request'].user
+            if Requester.objects.filter(user=user).exists():
+                raise serializers.ValidationError(
+                    "Ya tienes un perfil de requester creado. Solo puedes tener uno."
+                )
+        return data
     
     def create(self, validated_data):
         # El user se asigna automáticamente en perform_create de la view
         return super().create(validated_data)
+    
+    def to_representation(self, instance):
+        """Personalizar la representación para incluir placeholders en el frontend"""
+        data = super().to_representation(instance)
+        
+        # Agregar información de placeholders para el frontend
+        if not data.get('requester_institution'):
+            data['_placeholder_institution'] = "Ej: Universidad Nacional de Colombia, Max Planck Institute"
+        if not data.get('institution_location'):
+            data['_placeholder_location'] = "Ej: Bogotá, Colombia o Berlin, Germany"
+            
+        return data
 
 class RequestSerializer(serializers.ModelSerializer):
     requester_name = serializers.CharField(source='requester.first_name', read_only=True)

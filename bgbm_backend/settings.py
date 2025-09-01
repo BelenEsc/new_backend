@@ -199,3 +199,33 @@ LOGGING = {
         },
     },
 }
+
+# Configuración de Email
+# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend' #temporal para descartar que no se rtata de las credenciales 
+# #EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend' 
+# EMAIL_HOST = 'mail.zedat.fu-berlin.de'
+# EMAIL_PORT = 587
+# EMAIL_USE_TLS = True
+# EMAIL_HOST_USER = 'andreabee90@fu-berlin.de'  # Tu email universitario
+# EMAIL_HOST_PASSWORD = '100argentinosdicen'  # Tu contraseña del email universitario
+# DEFAULT_FROM_EMAIL = 'andreabee90@fu-berlin.de'
+# SERVER_EMAIL = 'andreabee90@fu-berlin.de'
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_USE_SSL = False
+EMAIL_HOST_USER = 'belenescobari@gmail.com'  # Tu Gmail
+EMAIL_HOST_PASSWORD = 'hvlb ilom dvur qkii'  # NO tu contraseña normal
+DEFAULT_FROM_EMAIL = 'belenescobari@gmail.com'
+SERVER_EMAIL = 'belenescobari@gmail.com'
+EMAIL_TIMEOUT = 60
+
+
+# URL del frontend para enlaces de activación y reset
+FRONTEND_URL = 'http://localhost:3000'
+
+# Configuración adicional para verificación de email
+ACCOUNT_EMAIL_VERIFICATION = 'mandatory'
+ACCOUNT_EMAIL_REQUIRED = True
