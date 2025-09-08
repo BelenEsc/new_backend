@@ -1,4 +1,4 @@
-# models.py - Actualizado
+# models.py - Actualizado con shipment opcional
 from django.db import models
 from django.contrib.auth.models import User
 from django.core.validators import EmailValidator
@@ -21,7 +21,7 @@ class Requester(models.Model):
     )
     institution_location = models.CharField(
         max_length=100, 
-        help_text="Ej: Bogotá, Colombia o Berlin, Germassssny"
+        help_text="Ej: Bogotá, Colombia o Berlin, Germany"
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -64,23 +64,12 @@ class Request(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        managed = True  # Cambiar a True
+        managed = True
         db_table = 'Request'
         db_table_comment = '\t'
 
-class DnaAliquot(models.Model):
-    request = models.ForeignKey('Request', models.DO_NOTHING)
-    shipment = models.ForeignKey('Shipment', models.DO_NOTHING)
-    dna_aliquot_qr_code = models.CharField(unique=True, max_length=15)
-    metadata = models.ForeignKey('Metadata', models.DO_NOTHING)
-    is_in_database = models.IntegerField(blank=True, null=True)
-    dna_aliquot_storage_location = models.CharField(max_length=45, blank=True, null=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        managed = True  # Cambiar a True
-        db_table = 'DNA_aliquot'
+    def __str__(self):
+        return f"Request #{self.id} - {self.requester}"
 
 class Metadata(models.Model):
     request = models.ForeignKey('Request', models.DO_NOTHING)
@@ -111,8 +100,11 @@ class Metadata(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        managed = True  # Cambiar a True
+        managed = True
         db_table = 'Metadata'
+
+    def __str__(self):
+        return f"{self.scientific_name} - {self.original_sample_id}"
 
 class Shipment(models.Model):
     request = models.ForeignKey(Request, models.DO_NOTHING)
@@ -124,21 +116,43 @@ class Shipment(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        managed = True  # Cambiar a True
+        managed = True
         db_table = 'Shipment'
 
+    def __str__(self):
+        return f"Shipment #{self.id} - Request {self.request.id}"
+
+# CAMBIOS PRINCIPALES: Campos no obligatorios en Tissue
 class Tissue(models.Model):
     request = models.ForeignKey(Request, models.DO_NOTHING)
-    shipment = models.ForeignKey(Shipment, models.DO_NOTHING)
-    tissue_barcode = models.CharField(unique=True, max_length=15)
+    shipment = models.ForeignKey(Shipment, models.DO_NOTHING, null=True, blank=True)  # Opcional
+    tissue_barcode = models.CharField(unique=True, max_length=15, blank=True, null=True)  # No obligatorio
     metadata = models.ForeignKey(Metadata, models.DO_NOTHING)
-    is_in_jacq = models.IntegerField()
-    tissue_sample_storage_location = models.CharField(max_length=45)
+    is_in_jacq = models.IntegerField(blank=True, null=True)  # No obligatorio
+    tissue_sample_storage_location = models.CharField(max_length=45, blank=True, null=True)  # No obligatorio
     created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)  # Corregido typo
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        managed = True  # Cambiar a True
+        managed = True
         db_table = 'Tissue'
 
-# Los modelos de auth y django se mantienen igual con managed = False
+    def __str__(self):
+        return f"Tissue {self.tissue_barcode or f'#{self.id}'}"
+
+class DnaAliquot(models.Model):
+    request = models.ForeignKey('Request', models.DO_NOTHING)
+    shipment = models.ForeignKey('Shipment', models.DO_NOTHING, null=True, blank=True)  # CAMBIO: Ahora opcional
+    dna_aliquot_qr_code = models.CharField(unique=True, max_length=15)
+    metadata = models.ForeignKey('Metadata', models.DO_NOTHING)
+    is_in_database = models.IntegerField(blank=True, null=True)
+    dna_aliquot_storage_location = models.CharField(max_length=45, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        managed = True
+        db_table = 'DNA_aliquot'
+
+    def __str__(self):
+        return f"DNA Aliquot {self.dna_aliquot_qr_code}"

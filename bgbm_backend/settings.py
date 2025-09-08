@@ -200,11 +200,11 @@ LOGGING = {
     },
 }
 
-# Configuración de Email
+# # Configuración de Email
 # EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend' #temporal para descartar que no se rtata de las credenciales 
 # #EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend' 
-# EMAIL_HOST = 'mail.zedat.fu-berlin.de'
-# EMAIL_PORT = 587
+# EMAIL_HOST = '	mail.fu-berlin.de'
+# EMAIL_PORT = 25
 # EMAIL_USE_TLS = True
 # EMAIL_HOST_USER = 'andreabee90@fu-berlin.de'  # Tu email universitario
 # EMAIL_HOST_PASSWORD = '100argentinosdicen'  # Tu contraseña del email universitario

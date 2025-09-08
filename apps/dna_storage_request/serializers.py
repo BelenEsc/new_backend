@@ -42,19 +42,48 @@ class RequesterSerializer(serializers.ModelSerializer):
             
         return data
 
-class RequestSerializer(serializers.ModelSerializer):
+# Serializer base para Request (campos comunes)
+class BaseRequestSerializer(serializers.ModelSerializer):
     requester_name = serializers.CharField(source='requester.first_name', read_only=True)
     requester_institution = serializers.CharField(source='requester.requester_institution', read_only=True)
     requester_full_name = serializers.SerializerMethodField()
-    
-    class Meta:
-        model = Request
-        fields = '__all__'
     
     def get_requester_full_name(self, obj):
         if obj.requester:
             return f"{obj.requester.first_name} {obj.requester.last_name}"
         return None
+
+# Serializer para usuarios normales (sin campos administrativos)
+class RequestUserSerializer(BaseRequestSerializer):
+    class Meta:
+        model = Request
+        fields = [
+            'id', 'requester', 'request_date', 'tissue_sample_quantity', 
+            'aliquot_sample_quantity', 'has_manifest_file',
+            'created_at', 'updated_at', 'requester_name', 'requester_institution', 
+            'requester_full_name'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at', 'requester_name', 
+                           'requester_institution', 'requester_full_name']
+
+# Serializer para admin (con todos los campos)
+class RequestAdminSerializer(BaseRequestSerializer):
+    class Meta:
+        model = Request
+        fields = '__all__'
+
+# Serializer principal que decide cuál usar
+class RequestSerializer(serializers.ModelSerializer):
+    def __new__(cls, *args, **kwargs):
+        # Obtener el request del contexto
+        context = kwargs.get('context', {})
+        request = context.get('request')
+        
+        # Si el usuario es admin, usar el serializer completo
+        if request and request.user.is_staff:
+            return RequestAdminSerializer(*args, **kwargs)
+        else:
+            return RequestUserSerializer(*args, **kwargs)
 
 class MetadataSerializer(serializers.ModelSerializer):
     request_id = serializers.CharField(source='request.id', read_only=True)
@@ -63,29 +92,120 @@ class MetadataSerializer(serializers.ModelSerializer):
         model = Metadata
         fields = '__all__'
 
-class ShipmentSerializer(serializers.ModelSerializer):
+# SHIPMENTS: Separar campos para admin vs usuario
+class BaseShipmentSerializer(serializers.ModelSerializer):
     request_id = serializers.CharField(source='request.id', read_only=True)
-    
+
+class ShipmentUserSerializer(BaseShipmentSerializer):
+    """Solo campos visibles para usuarios normales"""
+    class Meta:
+        model = Shipment
+        fields = [
+            'id', 'request', 'shipment_date', 'tracking_number',
+            'created_at', 'updated_at', 'request_id'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at', 'request_id']
+
+class ShipmentAdminSerializer(BaseShipmentSerializer):
+    """Todos los campos para admin"""
     class Meta:
         model = Shipment
         fields = '__all__'
 
-class TissueSerializer(serializers.ModelSerializer):
+class ShipmentSerializer(serializers.ModelSerializer):
+    def __new__(cls, *args, **kwargs):
+        context = kwargs.get('context', {})
+        request = context.get('request')
+        
+        if request and request.user.is_staff:
+            return ShipmentAdminSerializer(*args, **kwargs)
+        else:
+            return ShipmentUserSerializer(*args, **kwargs)
+
+# TISSUES: Separar campos para admin vs usuario
+class BaseTissueSerializer(serializers.ModelSerializer):
     request_id = serializers.CharField(source='request.id', read_only=True)
-    shipment_id = serializers.CharField(source='shipment.id', read_only=True)
+    shipment_id = serializers.CharField(source='shipment.id', read_only=True, allow_null=True)
     metadata_sample_id = serializers.CharField(source='metadata.original_sample_id', read_only=True)
     scientific_name = serializers.CharField(source='metadata.scientific_name', read_only=True)
-    
+
+class TissueUserSerializer(BaseTissueSerializer):
+    """Solo campos visibles para usuarios normales"""
+    class Meta:
+        model = Tissue
+        fields = [
+            'id', 'request', 'shipment', 'metadata', 
+            'created_at', 'updated_at', 'request_id', 'shipment_id',
+            'metadata_sample_id', 'scientific_name'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at', 'request_id', 
+                           'shipment_id', 'metadata_sample_id', 'scientific_name']
+        extra_kwargs = {
+            'shipment': {'required': False, 'allow_null': True},
+        }
+
+class TissueAdminSerializer(BaseTissueSerializer):
+    """Todos los campos para admin"""
     class Meta:
         model = Tissue
         fields = '__all__'
+        extra_kwargs = {
+            'shipment': {'required': False, 'allow_null': True},
+            'tissue_barcode': {'required': False, 'allow_null': True, 'allow_blank': True},
+            'tissue_sample_storage_location': {'required': False, 'allow_null': True, 'allow_blank': True},
+            'is_in_jacq': {'required': False, 'allow_null': True}
+        }
 
-class DnaAliquotSerializer(serializers.ModelSerializer):
+class TissueSerializer(serializers.ModelSerializer):
+    def __new__(cls, *args, **kwargs):
+        context = kwargs.get('context', {})
+        request = context.get('request')
+        
+        if request and request.user.is_staff:
+            return TissueAdminSerializer(*args, **kwargs)
+        else:
+            return TissueUserSerializer(*args, **kwargs)
+
+# DNA ALIQUOTS: Separar campos para admin vs usuario
+class BaseDnaAliquotSerializer(serializers.ModelSerializer):
     request_id = serializers.CharField(source='request.id', read_only=True)
-    shipment_id = serializers.CharField(source='shipment.id', read_only=True)
+    shipment_id = serializers.CharField(source='shipment.id', read_only=True, allow_null=True)
     metadata_sample_id = serializers.CharField(source='metadata.original_sample_id', read_only=True)
     scientific_name = serializers.CharField(source='metadata.scientific_name', read_only=True)
-    
+
+class DnaAliquotUserSerializer(BaseDnaAliquotSerializer):
+    """Solo campos visibles para usuarios normales"""
+    class Meta:
+        model = DnaAliquot
+        fields = [
+            'id', 'request', 'shipment', 'metadata',
+            'created_at', 'updated_at', 'request_id', 'shipment_id',
+            'metadata_sample_id', 'scientific_name'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at', 'request_id', 
+                           'shipment_id', 'metadata_sample_id', 'scientific_name']
+        extra_kwargs = {
+            'shipment': {'required': False, 'allow_null': True},
+        }
+
+class DnaAliquotAdminSerializer(BaseDnaAliquotSerializer):
+    """Todos los campos para admin"""
     class Meta:
         model = DnaAliquot
         fields = '__all__'
+        extra_kwargs = {
+            'shipment': {'required': False, 'allow_null': True},
+            'dna_aliquot_qr_code': {'required': False, 'allow_null': True, 'allow_blank': True},
+            'dna_aliquot_storage_location': {'required': False, 'allow_null': True, 'allow_blank': True},
+            'is_in_database': {'required': False, 'allow_null': True}
+        }
+
+class DnaAliquotSerializer(serializers.ModelSerializer):
+    def __new__(cls, *args, **kwargs):
+        context = kwargs.get('context', {})
+        request = context.get('request')
+        
+        if request and request.user.is_staff:
+            return DnaAliquotAdminSerializer(*args, **kwargs)
+        else:
+            return DnaAliquotUserSerializer(*args, **kwargs)
